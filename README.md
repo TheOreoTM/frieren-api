@@ -9,4 +9,4 @@ go run main.go
 
 ## Output
 
-![Output showing the scraped data](https://i.imgur.com/0g9w0wU.png)
+![Output showing the scraped data](assets/output.png)
