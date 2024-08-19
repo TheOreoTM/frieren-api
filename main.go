@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 )
@@ -24,15 +23,10 @@ func main() {
 		close(scraper.DataChannel)
 	}()
 
-	// Print the collected data as JSON
-	for data := range scraper.DataChannel {
-		jsonData, err := json.Marshal(data)
-		if err != nil {
-			fmt.Println("Error marshalling data:", err)
-			continue
-		}
-
-		fmt.Printf("Character: %s\n", data["character"])
-		fmt.Println(string(jsonData) + "\n")
+	err := scraper.WriteDataToCSV("characters.csv")
+	if err != nil {
+		fmt.Println("Error writing data to CSV:", err)
 	}
+
+	fmt.Printf("Scraped %d characters\n", len(scraper.CharacterURLs))
 }

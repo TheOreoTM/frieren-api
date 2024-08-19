@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/gocolly/colly"
@@ -51,4 +53,41 @@ func (s *Scraper) ScrapeCharacters(wg *sync.WaitGroup) {
 		debug("Scraping character: "+url, s)
 		go scrapeCharacter(url, wg, s.DataChannel)
 	}
+}
+
+// WriteDataToCSV writes the scraped data to a CSV file
+func (s *Scraper) WriteDataToCSV(filename string) error {
+	// Create or open the CSV file
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write the header
+	err = writer.Write([]string{"URL", "Character", "Class", "Gender", "Rank", "Species"})
+	if err != nil {
+		return err
+	}
+
+	// Write data for each character
+	for data := range s.DataChannel {
+		row := []string{
+			data["url"],
+			data["character"],
+			data["class"],
+			data["gender"],
+			data["rank"],
+			data["species"],
+		}
+		err := writer.Write(row)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
