@@ -18,32 +18,24 @@ func scrape(url string, wg *sync.WaitGroup, ch chan<- map[string]string) {
 	data := make(map[string]string)
 
 	c.OnHTML(".mw-page-title-main", func(e *colly.HTMLElement) {
-		data["character"] = e.Text
+		data["character"] = cleanText(e.DOM)
 	})
 
-	c.OnHTML("div[data-source='species'] .pi-data-value", func(e *colly.HTMLElement) {
-		species := e.ChildText("a")
-		data["species"] = species
-	})
-
-	c.OnHTML("div[data-source='gender'] .pi-data-value", func(e *colly.HTMLElement) {
-		gender := e.ChildText("a")
-		data["gender"] = gender
-	})
-
-	c.OnHTML("div[data-source='class'] .pi-data-value", func(e *colly.HTMLElement) {
-		class := e.ChildText("a")
-		data["class"] = class
-	})
-
-	c.OnHTML("div[data-source='rank'] .pi-data-value", func(e *colly.HTMLElement) {
-		rank := cleanText(e.DOM)
-		data["rank"] = rank
-	})
+	getCharBioInfo("species", data, c)
+	getCharBioInfo("gender", data, c)
+	getCharBioInfo("class", data, c)
+	getCharBioInfo("rank", data, c)
 
 	// Visit the page and once done, send the data through the channel
 	c.Visit(url)
 	ch <- data
+}
+
+// Helper function to get character info from the page. Info is the name of the data source.
+func getCharBioInfo(info string, data map[string]string, c *colly.Collector) {
+	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
+		data[info] = cleanText(e.DOM)
+	})
 }
 
 // Helper function to clean up text, removing unwanted tags like <sup> or <br>
