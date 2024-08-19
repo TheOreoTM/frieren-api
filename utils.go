@@ -23,15 +23,14 @@ func cleanText(selection *goquery.Selection) string {
 			href, exists := s.Attr("href")
 			if exists {
 				// Format hyperlink as Markdown: [text](link)
-				rankText.WriteString(strings.TrimSpace(fmt.Sprintf("[%s](%s)", strings.TrimSpace(s.Text()), fmt.Sprintf("https://frieren.fandom.com%s", href))))
+				fmt.Println(s.Text())
+				rankText.WriteString(fmt.Sprintf("[%s](%s)", strings.TrimSpace(s.Text()), fmt.Sprintf("https://frieren.fandom.com%s", href)))
 			}
 			return
 		}
-		if nodeText := s.Text(); nodeText != "" {
-			rankText.WriteString(strings.TrimSpace(nodeText) + " ")
-		}
 	})
 
+	// Finally, remove any trailing spaces
 	return strings.TrimSpace(rankText.String())
 }
 
