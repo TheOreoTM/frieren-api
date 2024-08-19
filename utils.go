@@ -20,12 +20,10 @@ func cleanText(selection *goquery.Selection) string {
 			return
 		}
 		if s.Is("a") {
-			// Handle hyperlinks within the text
-			fmt.Printf("HYPERLINK DETECTED: \n\n\n\n\n\n")
 			href, exists := s.Attr("href")
 			if exists {
 				// Format hyperlink as Markdown: [text](link)
-				rankText.WriteString(fmt.Sprintf("[%s](%s)", strings.TrimSpace(s.Text()), href))
+				rankText.WriteString(strings.TrimSpace(fmt.Sprintf("[%s](%s)", strings.TrimSpace(s.Text()), fmt.Sprintf("https://frieren.fandom.com%s", href))))
 			}
 			return
 		}
