@@ -30,6 +30,10 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, ch chan<- map[string]string
 
 func getCharInfo(info string, data map[string]string, c *colly.Collector) {
 	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
-		data[info] = cleanText(e.DOM)
+		text := cleanText(e.DOM)
+		if text == "" {
+			return
+		}
+		data[info] = text
 	})
 }
