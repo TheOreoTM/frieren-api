@@ -91,6 +91,7 @@ func main() {
 		}
 
 		// Print the collected data as JSON
+		fmt.Printf("Character: %s\n", data["character"])
 		fmt.Println(string(jsonData) + "\n")
 	}
 }
