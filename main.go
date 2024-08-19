@@ -21,10 +21,10 @@ func scrape(url string, wg *sync.WaitGroup, ch chan<- map[string]string) {
 		data["character"] = cleanText(e.DOM)
 	})
 
-	getCharBioInfo("species", data, c)
-	getCharBioInfo("gender", data, c)
-	getCharBioInfo("class", data, c)
-	getCharBioInfo("rank", data, c)
+	getCharInfo("species", data, c)
+	getCharInfo("gender", data, c)
+	getCharInfo("class", data, c)
+	getCharInfo("rank", data, c)
 
 	// Visit the page and once done, send the data through the channel
 	c.Visit(url)
@@ -32,7 +32,7 @@ func scrape(url string, wg *sync.WaitGroup, ch chan<- map[string]string) {
 }
 
 // Helper function to get character info from the page. Info is the name of the data source.
-func getCharBioInfo(info string, data map[string]string, c *colly.Collector) {
+func getCharInfo(info string, data map[string]string, c *colly.Collector) {
 	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
 		data[info] = cleanText(e.DOM)
 	})
