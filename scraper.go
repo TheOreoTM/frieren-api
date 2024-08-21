@@ -12,7 +12,7 @@ import (
 type Scraper struct {
 	CharacterURLs []string
 	URLSet        map[string]struct{}
-	DataChannel   chan map[string]string
+	DataChannel   chan Character
 	ShouldDebug   bool
 }
 
@@ -21,7 +21,7 @@ func NewScraper() *Scraper {
 	return &Scraper{
 		CharacterURLs: []string{},
 		URLSet:        make(map[string]struct{}),
-		DataChannel:   make(chan map[string]string),
+		DataChannel:   make(chan Character),
 		ShouldDebug:   false,
 	}
 }
@@ -76,12 +76,12 @@ func (s *Scraper) WriteDataToCSV(filename string) error {
 	// Write data for each character
 	for data := range s.DataChannel {
 		row := []string{
-			data["url"],
-			data["character"],
-			data["class"],
-			data["gender"],
-			data["rank"],
-			data["species"],
+			data.URL,
+			data.Data["character"],
+			data.Data["class"],
+			data.Data["gender"],
+			data.Data["rank"],
+			data.Data["species"],
 		}
 		err := writer.Write(row)
 		if err != nil {

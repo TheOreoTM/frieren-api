@@ -7,16 +7,21 @@ import (
 	"github.com/gocolly/colly"
 )
 
-func scrapeCharacter(url string, wg *sync.WaitGroup, ch chan<- map[string]string) {
+type Character struct {
+	URL  string
+	Data map[string]string
+}
+
+func scrapeCharacter(url string, wg *sync.WaitGroup, ch chan<- Character) {
 	defer wg.Done()
 
 	c := colly.NewCollector(colly.AllowedDomains("frieren.fandom.com"))
 
-	data := make(map[string]string)
-	data["url"] = url
+	data := Character{URL: url, Data: make(map[string]string)}
+	data.URL = url
 
 	c.OnHTML(".mw-page-title-main", func(e *colly.HTMLElement) {
-		data["character"] = cleanText(e.DOM)
+		data.Data["character"] = cleanText(e.DOM)
 	})
 
 	getCharInfo("species", data, c)
@@ -28,12 +33,12 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, ch chan<- map[string]string
 	ch <- data
 }
 
-func getCharInfo(info string, data map[string]string, c *colly.Collector) {
+func getCharInfo(info string, character Character, c *colly.Collector) {
 	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
 		text := cleanText(e.DOM)
 		if text == "" {
 			return
 		}
-		data[info] = text
+		character.Data[info] = text
 	})
 }
