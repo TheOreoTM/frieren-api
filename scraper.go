@@ -48,11 +48,11 @@ func (s *Scraper) GetCharacterURLs(wg *sync.WaitGroup) {
 }
 
 // ScrapeCharacters starts the scraping process for each character URL
-func (s *Scraper) ScrapeCharacters(wg *sync.WaitGroup) {
+func (s *Scraper) ScrapeCharacters(wg *sync.WaitGroup, c *colly.Collector) {
 	for _, url := range s.CharacterURLs {
 		wg.Add(1)
 		debug("Scraping character: "+url, s)
-		go scrapeCharacter(url, wg, s.DataChannel)
+		go scrapeCharacter(url, wg, s.DataChannel, c)
 	}
 }
 

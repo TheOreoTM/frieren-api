@@ -17,10 +17,8 @@ type Character struct {
 	Abilities Abilities
 }
 
-func scrapeCharacter(url string, wg *sync.WaitGroup, ch chan<- Character) {
+func scrapeCharacter(url string, wg *sync.WaitGroup, ch chan<- Character, c *colly.Collector) {
 	defer wg.Done()
-
-	c := colly.NewCollector(colly.AllowedDomains("frieren.fandom.com"))
 
 	data := Character{URL: url, Data: make(map[string]string)}
 	data.URL = url
