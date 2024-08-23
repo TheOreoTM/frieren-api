@@ -86,8 +86,37 @@ func processItemLists(ul *goquery.Selection, abilities map[string]string) {
 	ul.Children().Each(func(_ int, li *goquery.Selection) {
 		if li.Is("li") {
 			if li.Find("ul").Length() > 0 {
-				// Handle parent ability and nested abilities
+				// We do this because if the ability is a parent ability there is a nested <ul> element in the <li>
+				// We need to extract the parent ability from the <li> and the nested <ul> from the <li>
+				// Otherwise the entire <ul> is also extracted as an ability description
 				processNestedAbilities(li, abilities)
+
+				// Now process the nested <ul> abilities
+				li.Find("ul li").Each(func(_ int, nestedLi *goquery.Selection) {
+					processNestedAbilities(nestedLi, abilities)
+					// nestedText := cleanText(nestedLi)
+					// nestedSections := strings.Split(nestedText, ": ")
+					// nestedName := strings.TrimSpace(strings.Join(nestedSections[:len(nestedSections)-1], ": "))
+					// nestedDescription := strings.TrimSpace(strings.Replace(nestedText, nestedName+":", "", 1))
+
+					// if nestedName != "" && nestedDescription != "" {
+					// 	abilities[nestedName] = nestedDescription
+					// }
+				})
+
+				// Now process the nested nested <ul> abilities, yeah this is a bit of a mess but ill fix it later
+				li.Find("ul li ul li").Each(func(_ int, nestedNestedLi *goquery.Selection) {
+					processNestedAbilities(nestedNestedLi, abilities)
+
+					// nestedNestedText := cleanText(nestedNestedLi)
+					// nestedNestedSections := strings.Split(nestedNestedText, ": ")
+					// nestedNestedName := strings.TrimSpace(strings.Join(nestedNestedSections[:len(nestedNestedSections)-1], ": "))
+					// nestedNestedDescription := strings.TrimSpace(strings.Replace(nestedNestedText, nestedNestedName+":", "", 1))
+
+					// if nestedNestedName != "" && nestedNestedDescription != "" {
+					// 	abilities[nestedNestedName] = nestedNestedDescription
+					// }
+				})
 			} else {
 				// Extract parent ability
 				fullText := cleanText(li)
@@ -106,10 +135,11 @@ func processItemLists(ul *goquery.Selection, abilities map[string]string) {
 func processNestedAbilities(li *goquery.Selection, abilities map[string]string) {
 	var parentFullText strings.Builder
 
-	// Add text to the parentFullText builder until we reach the nested <ul> element
+	// Here we are adding text into the parentFullText builder until we reach the nested <ul> element
+	// This is done by iterating over the <li> contents and appending text to the parentFullText builder
 	li.Contents().Each(func(i int, s *goquery.Selection) {
 		if s.Is("ul") {
-			return // Stop when nested <ul> is encountered
+			return
 		}
 
 		if nodeText := cleanText(s); nodeText != "" {
@@ -117,7 +147,6 @@ func processNestedAbilities(li *goquery.Selection, abilities map[string]string) 
 		}
 	})
 
-	// Process parent ability
 	parentSections := strings.Split(parentFullText.String(), ": ")
 	parentName := strings.TrimSpace(strings.Join(parentSections[:len(parentSections)-1], ": "))
 	parentDescription := strings.TrimSpace(strings.Replace(parentFullText.String(), parentName+":", "", 1))
@@ -126,15 +155,4 @@ func processNestedAbilities(li *goquery.Selection, abilities map[string]string) 
 		abilities[parentName] = parentDescription
 	}
 
-	// Now process the nested <ul> abilities
-	li.Find("ul li").Each(func(_ int, nestedLi *goquery.Selection) {
-		nestedText := cleanText(nestedLi)
-		nestedSections := strings.Split(nestedText, ": ")
-		nestedName := strings.TrimSpace(strings.Join(nestedSections[:len(nestedSections)-1], ": "))
-		nestedDescription := strings.TrimSpace(strings.Replace(nestedText, nestedName+":", "", 1))
-
-		if nestedName != "" && nestedDescription != "" {
-			abilities[nestedName] = nestedDescription
-		}
-	})
 }
