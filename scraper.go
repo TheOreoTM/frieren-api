@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -53,6 +54,33 @@ func (s *Scraper) ScrapeCharacters(wg *sync.WaitGroup) {
 		debug("Scraping character: "+url, s)
 		go scrapeCharacter(url, wg, s.DataChannel)
 	}
+}
+
+func (s *Scraper) WriteDataToJSON(filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+
+	// Create a slice to hold all the characters
+	var characters []Character
+
+	// Read from DataChannel until it's closed
+	for data := range s.DataChannel {
+		characters = append(characters, data)
+	}
+
+	// Encode all characters to JSON
+	err = encoder.Encode(characters)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // WriteDataToCSV writes the scraped data to a CSV file

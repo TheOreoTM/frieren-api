@@ -28,7 +28,7 @@ func cleanText(selection *goquery.Selection) string {
 			return
 		}
 		if nodeText := s.Text(); nodeText != "" {
-			cleanedText.WriteString(strings.TrimSpace(nodeText))
+			cleanedText.WriteString(nodeText)
 		}
 	})
 
