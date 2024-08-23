@@ -3,15 +3,10 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
-
-	"github.com/gocolly/colly"
 )
 
 func main() {
 	var wg sync.WaitGroup
-	c := colly.NewCollector(colly.AllowedDomains("frieren.fandom.com"))
-	c.Limit(&colly.LimitRule{Parallelism: 10, Delay: 500 * time.Millisecond})
 
 	// Initialize the scraper and URL list
 	scraper := NewScraper()
@@ -20,7 +15,7 @@ func main() {
 	scraper.GetCharacterURLs(&wg)
 
 	// Start scraping each character
-	scraper.ScrapeCharacters(&wg, c)
+	scraper.ScrapeCharacters(&wg)
 
 	// // Scrape one character
 	// scrapeCharacter("https://frieren.fandom.com/wiki/Sein", &wg, scraper.DataChannel)
