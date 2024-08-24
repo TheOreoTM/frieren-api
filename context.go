@@ -1,16 +1,16 @@
 package main
 
-type Context struct {
+type Ctx struct {
 	CurrentURL string
 	Scraper    *Scraper
 }
 
-func NewContext() *Context {
-	return &Context{
+func NewContext() *Ctx {
+	return &Ctx{
 		Scraper: NewScraper(),
 	}
 }
 
-func (c *Context) SetCurrentURL(url string) {
+func (c *Ctx) SetCurrentURL(url string) {
 	c.CurrentURL = url
 }

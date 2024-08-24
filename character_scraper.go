@@ -17,35 +17,35 @@ type Character struct {
 	Abilities Abilities
 }
 
-func scrapeCharacter(wg *sync.WaitGroup, context *Context) {
+func scrapeCharacter(wg *sync.WaitGroup, ctx *Ctx) {
 	defer wg.Done()
 
 	c := colly.NewCollector(colly.AllowedDomains("frieren.fandom.com"))
 
-	data := Character{URL: context.CurrentURL, Data: make(map[string]string)}
+	data := Character{URL: ctx.CurrentURL, Data: make(map[string]string)}
 
 	c.OnHTML(".mw-page-title-main", func(e *colly.HTMLElement) {
-		data.Data["character"] = cleanText(e.DOM)
+		data.Data["character"] = cleanText(e.DOM, ctx)
 	})
 
-	getCharInfo("species", data, c)
-	getCharInfo("gender", data, c)
-	getCharInfo("class", data, c)
-	getCharInfo("rank", data, c)
+	getCharInfo("species", data, c, ctx)
+	getCharInfo("gender", data, c, ctx)
+	getCharInfo("class", data, c, ctx)
+	getCharInfo("rank", data, c, ctx)
 
 	// Extract abilities and store them in the data struct
 	c.OnHTML("h2 span#Abilities", func(e *colly.HTMLElement) {
 		fmt.Printf("Found Abilities heading: %s\n", e.Text)
-		extractAbilities(e.DOM)
+		extractAbilities(e.DOM, ctx)
 	})
 
 	c.Visit(data.URL)
-	context.Scraper.DataChannel <- data
+	ctx.Scraper.DataChannel <- data
 }
 
-func getCharInfo(info string, character Character, c *colly.Collector) {
+func getCharInfo(info string, character Character, c *colly.Collector, ctx *Ctx) {
 	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
-		text := cleanText(e.DOM)
+		text := cleanText(e.DOM, ctx)
 		if text == "" {
 			return
 		}
@@ -53,7 +53,7 @@ func getCharInfo(info string, character Character, c *colly.Collector) {
 	})
 }
 
-func extractAbilities(e *goquery.Selection) map[string]string {
+func extractAbilities(e *goquery.Selection, ctx *Ctx) map[string]string {
 	abilities := make(map[string]string)
 	abilities["default"] = ""
 
@@ -68,7 +68,7 @@ func extractAbilities(e *goquery.Selection) map[string]string {
 			continue
 		}
 
-		flattenedList := flattenList(next)
+		flattenedList := flattenList(next, ctx)
 		for _, ability := range flattenedList {
 			fmt.Printf("Found Ability: %q --- %d\n\n", ability, len(strings.Split(ability, ": ")))
 		}
@@ -170,7 +170,7 @@ func extractAbilities(e *goquery.Selection) map[string]string {
 // 	}
 // }
 
-func flattenList(ul *goquery.Selection) []string {
+func flattenList(ul *goquery.Selection, ctx *Ctx) []string {
 	var result []string
 
 	ul.Children().Each(func(_ int, li *goquery.Selection) {
@@ -182,9 +182,9 @@ func flattenList(ul *goquery.Selection) []string {
 
 			if nestedUl.Length() > 0 {
 				// Extract text from the <li> without nested <ul>
-				parentText = cleanText(li.Clone().ChildrenFiltered("ul").Remove().End())
+				parentText = cleanText(li.Clone().ChildrenFiltered("ul").Remove().End(), ctx)
 			} else {
-				parentText = cleanText(li)
+				parentText = cleanText(li, ctx)
 			}
 
 			if parentText != "" {
@@ -193,7 +193,7 @@ func flattenList(ul *goquery.Selection) []string {
 
 			// Recursively process the nested <ul> if present
 			if nestedUl.Length() > 0 {
-				result = append(result, flattenList(nestedUl)...)
+				result = append(result, flattenList(nestedUl, ctx)...)
 			}
 		}
 	})

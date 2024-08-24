@@ -28,7 +28,7 @@ func NewScraper() *Scraper {
 }
 
 // GetCharacterURLs gathers all unique character URLs from the list page
-func (s *Scraper) GetCharacterURLs(wg *sync.WaitGroup, context *Context) {
+func (s *Scraper) GetCharacterURLs(wg *sync.WaitGroup, ctx *Ctx) {
 	fmt.Println("Scraper started...")
 
 	debug("Getting character URLs...", s)
@@ -48,11 +48,11 @@ func (s *Scraper) GetCharacterURLs(wg *sync.WaitGroup, context *Context) {
 }
 
 // ScrapeCharacters starts the scraping process for each character URL
-func (s *Scraper) ScrapeCharacters(wg *sync.WaitGroup, context *Context) {
+func (s *Scraper) ScrapeCharacters(wg *sync.WaitGroup, ctx *Ctx) {
 	for _, url := range s.CharacterURLs {
 		wg.Add(1)
 		debug("Scraping character: "+url, s)
-		go scrapeCharacter(wg, context)
+		go scrapeCharacter(wg, ctx)
 	}
 }
 
