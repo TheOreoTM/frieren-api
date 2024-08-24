@@ -18,7 +18,7 @@ go run main.go
     - [x] Class
     - [x] Gender
     - [x] Rank
-    - Species
+    - [x] Species
 - Parses anchor tags and converts them to hyperlinks to be used in discord
 - Outputs the data in JSON
 
