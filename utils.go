@@ -12,9 +12,14 @@ func cleanText(selection *goquery.Selection) string {
 	var cleanedText strings.Builder
 
 	selection.Contents().Each(func(i int, s *goquery.Selection) {
-		if s.Is("sup") {
-			return // Ignore <sup> elements
+		if s.Is("sup .reference") {
+			// Add it as a hyperlink
+			href, exists := s.Attr("href")
+			if exists {
+				cleanedText.WriteString(fmt.Sprintf("[%s](%s)", strings.TrimSpace(s.Text()), fmt.Sprintf("https://frieren.fandom.com%s", href)))
+			}
 		}
+
 		if s.Is("br") {
 			cleanedText.WriteString("\n") // Handle <br> as newlines
 			return
