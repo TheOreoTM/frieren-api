@@ -11,14 +11,14 @@ go run main.go
 - Scrapes the Frieren Fandom website for all entries
 - Automatically crawls all pages of characters
 - Collects important data from each entry
- - Name
- - Description
- - Abilities
- - [ ] skills
- - Class
- - Gender
- - Rank
- - Species
+    - [x] Name
+    - [x] Description
+    - [x] Abilities
+    - [ ] skills
+    - [x] Class
+    - [x] Gender
+    - [x] Rank
+    - Species
 - Parses anchor tags and converts them to hyperlinks to be used in discord
 - Outputs the data in JSON
 
