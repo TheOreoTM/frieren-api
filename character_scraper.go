@@ -63,6 +63,14 @@ func extractAbilities(e *goquery.Selection) map[string]string {
 			break
 		}
 
+		if next.Is("p") {
+			if abilities["default"] == "" {
+				abilities["default"] = cleanText(next)
+			} else {
+				abilities["default"] += "\n" + cleanText(next)
+			}
+		}
+
 		if !next.Is("ul") { // Stop if we encounter a figure element (aka: ability shown in a picture)
 			continue
 		}
