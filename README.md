@@ -14,7 +14,7 @@ go run main.go
     - [x] Name
     - [x] Description
     - [x] Abilities
-    - [ ] skills
+    - [ ] Skills
     - [x] Class
     - [x] Gender
     - [x] Rank
