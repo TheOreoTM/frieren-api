@@ -1,6 +1,6 @@
 # Define variables
-BINARY_NAME=scraper
-SRC=./...
+BINARY_NAME=frieren-api
+SRC=./cmd/api
 
 # Default target: build the project
 all: build
