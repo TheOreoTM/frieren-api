@@ -11,15 +11,17 @@ import (
 
 func main() {
 	cfg := config.LoadConfig()
-	r := mux.NewRouter()
-	routes.SetupRoutes(r)
 	logger := config.SetupLogger(cfg.LogLevel)
+	r := mux.NewRouter()
+	routes.SetupRoutes(r, logger)
+	scraper := scraper.NewScraper(false, logger)
 
-	scraper := scraper.NewScraper()
 	data, err := scraper.Scrape("characters.json")
+
 	if err != nil {
 		logger.Errorf("Error scraping: %v", err)
 	}
+
 	logger.Infof("Scraped %d characters", data.AmountOfCharacters)
 
 	logger.Infof("Server starting on port %s", cfg.Port)

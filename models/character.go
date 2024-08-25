@@ -6,6 +6,11 @@ type Character struct {
 	Abilities Abilities         `json:"abilities"`
 }
 
+// Characters holds the list of characters.
+type Characters struct {
+	Characters []Character `json:"characters"`
+}
+
 func NewCharacter(url string) *Character {
 	return &Character{
 		URL:       url,
