@@ -1,0 +1,71 @@
+package api
+
+import (
+	"net/http"
+
+	"encoding/json"
+
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+
+	"github.com/theoreotm/frieren-api/storage"
+)
+
+type Server struct {
+	listenAddr string
+	store      storage.Storage
+	logger     *logrus.Logger
+}
+
+func NewServer(listenAddr string, store storage.Storage, logger *logrus.Logger) *Server {
+	return &Server{
+		listenAddr: listenAddr,
+		store:      store,
+		logger:     logger,
+	}
+}
+
+func (s *Server) Start(r *mux.Router, logger *logrus.Logger) {
+	r.HandleFunc("/characters", makeHTTPHandleFunc(s.handleGetCharacters)).Methods("GET")
+	r.HandleFunc("/characters/{name}", makeHTTPHandleFunc(s.handleGetCharacter)).Methods("GET")
+}
+
+// GetCharacter handles the GET /character/{name} endpoint.
+func (s *Server) handleGetCharacter(w http.ResponseWriter, r *http.Request) error {
+	vars := mux.Vars(r)
+	name := vars["name"]
+
+	character, err := s.store.GetCharacter(name)
+	if err != nil {
+		s.logger.Warnf("Character not found: %s", name)
+		return WriteJSON(w, http.StatusNotFound, ApiError{Error: "character not found"})
+	}
+
+	return WriteJSON(w, http.StatusOK, character)
+}
+
+// GetCharacters handles the GET /characters endpoint.
+func (s *Server) handleGetCharacters(w http.ResponseWriter, r *http.Request) error {
+	return WriteJSON(w, http.StatusOK, s.store.GetCharacters())
+}
+
+func WriteJSON(w http.ResponseWriter, status int, v any) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	return json.NewEncoder(w).Encode(v)
+}
+
+type apiFunc func(http.ResponseWriter, *http.Request) error
+
+type ApiError struct {
+	Error string `json:"error"`
+}
+
+func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := f(w, r); err != nil {
+			WriteJSON(w, http.StatusBadRequest, ApiError{Error: err.Error()})
+		}
+	}
+}

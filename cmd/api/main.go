@@ -4,17 +4,26 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	muxlogrus "github.com/pytimer/mux-logrus"
+	"github.com/theoreotm/frieren-api/api"
 	"github.com/theoreotm/frieren-api/config"
 	"github.com/theoreotm/frieren-api/pkg/scraper"
-	"github.com/theoreotm/frieren-api/routes"
+	"github.com/theoreotm/frieren-api/storage"
 )
 
 func main() {
 	cfg := config.LoadConfig()
+	listenAddr := ":" + cfg.Port
 	logger := config.SetupLogger(cfg.LogLevel)
-	r := mux.NewRouter()
-	routes.SetupRoutes(r, logger)
 	scraper := scraper.NewScraper(false, logger)
+
+	r := mux.NewRouter()
+	r.Use(muxlogrus.NewLogger().Middleware)
+
+	store := storage.NewMemoryStorage()
+
+	server := api.NewServer(listenAddr, store, logger)
+	server.Start(r, logger)
 
 	data, err := scraper.Scrape("characters.json")
 
