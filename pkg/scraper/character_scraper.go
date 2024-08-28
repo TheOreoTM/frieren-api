@@ -48,15 +48,6 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 func getCharInfo(info string, character *models.Character, c *colly.Collector) {
 
 	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
-		if info == "status" {
-			status := extractStatus(e.DOM)
-			if status != "" {
-				character.AddData(info, status)
-			}
-
-			return
-		}
-
 		text := cleanText(e.DOM)
 		if text == "" {
 			return
@@ -137,10 +128,6 @@ func flattenList(ul *goquery.Selection) []string {
 
 // extractStatus extracts the status information from the collapsible content.
 func extractStatus(s *goquery.Selection) string {
-	// Check if the content is hidden by default
-	if s.Find(".mw-collapsible-content").Length() > 0 {
-		content := s.Find(".mw-collapsible-content")
-		return cleanText(content)
-	}
-	return ""
+	return cleanText(s)
+
 }
