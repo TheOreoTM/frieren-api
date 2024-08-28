@@ -26,6 +26,19 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 	getCharInfo("class", character, c)
 	getCharInfo("rank", character, c)
 	getCharInfo("age", character, c)
+	// Get character status
+
+	c.OnHTML("div.pi-item[data-source=status]", func(e *colly.HTMLElement) {
+		// Find the collapsible content
+		statusDiv := e.ChildAttr("div.mw-collapsible-content", "style")
+		if statusDiv == "display: none;" {
+			fmt.Println("Content is collapsed. You might need to handle this differently.")
+		}
+
+		// Extract the status
+		status := e.ChildText("div.mw-collapsible-content p")
+		character.AddData("status", status)
+	})
 
 	// Extract abilities and store them in the data struct
 	c.OnHTML("h2 span#Abilities", func(e *colly.HTMLElement) {
