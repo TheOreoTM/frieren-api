@@ -17,6 +17,8 @@ func main() {
 	logger := config.SetupLogger(cfg.LogLevel)
 	scraper := scraper.NewScraper(false, logger)
 
+	data, err := scraper.Scrape("characters.json")
+
 	r := mux.NewRouter()
 	r.Use(muxlogrus.NewLogger().Middleware)
 
@@ -24,8 +26,6 @@ func main() {
 
 	server := api.NewServer(listenAddr, store, logger)
 	server.Start(r, logger)
-
-	data, err := scraper.Scrape("characters.json")
 
 	if err != nil {
 		logger.Errorf("Error scraping: %v", err)

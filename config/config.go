@@ -16,7 +16,7 @@ type Configuration struct {
 // LoadConfig loads configuration from environment variables.
 func LoadConfig() *Configuration {
 	return &Configuration{
-		Port:        getEnv("PORT", "8080"),
+		Port:        getEnv("PORT", "8000"),
 		DatabaseURL: getEnv("DATABASE_URL", "localhost:5432"),
 		LogLevel:    getEnv("LOG_LEVEL", "info"),
 	}

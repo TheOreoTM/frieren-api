@@ -9,6 +9,7 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/sirupsen/logrus"
 	"github.com/theoreotm/frieren-api/models"
+	"github.com/theoreotm/frieren-api/pkg/data"
 )
 
 type Scraper struct {
@@ -119,6 +120,7 @@ func (s *Scraper) WriteDataToJSON(filename string) error {
 		return err
 	}
 
+	data.LoadCharacters(filename)
 	return nil
 }
 
