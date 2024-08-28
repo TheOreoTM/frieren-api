@@ -21,10 +21,18 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 		character.AddData("character", cleanText(e.DOM))
 	})
 
-	infoFields := []string{"species", "gender", "class", "rank", "age", "status"}
+	infoFields := []string{"species", "gender", "class", "rank", "age"}
 	for _, field := range infoFields {
 		getCharInfo(field, character, c)
 	}
+
+	// Extract status
+	c.OnHTML("div[data-source=status] .pi-data-value", func(e *colly.HTMLElement) {
+		status := extractStatus(e.DOM)
+		if status != "" {
+			character.AddData("status", status)
+		}
+	})
 
 	// Get character status
 	c.OnHTML("div.pi-item[data-source=status]", func(e *colly.HTMLElement) {
