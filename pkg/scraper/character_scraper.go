@@ -50,7 +50,7 @@ func getCharInfo(info string, character *models.Character, c *colly.Collector) {
 	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
 		text := cleanText(e.DOM)
 		if text == "" {
-			return
+			character.AddData(info, "Unknown")
 		}
 
 		character.AddData(info, text)
