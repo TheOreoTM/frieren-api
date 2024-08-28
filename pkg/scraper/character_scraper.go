@@ -25,6 +25,7 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 	getCharInfo("gender", character, c)
 	getCharInfo("class", character, c)
 	getCharInfo("rank", character, c)
+	getCharInfo("age", character, c)
 
 	// Extract abilities and store them in the data struct
 	c.OnHTML("h2 span#Abilities", func(e *colly.HTMLElement) {
