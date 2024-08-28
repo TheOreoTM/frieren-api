@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theoreotm/frieren-api/models"
 	"github.com/theoreotm/frieren-api/pkg/data"
+	"github.com/theoreotm/frieren-api/storage"
 )
 
 type Scraper struct {
@@ -120,7 +121,11 @@ func (s *Scraper) WriteDataToJSON(filename string) error {
 		return err
 	}
 
-	data.LoadCharacters(filename)
+	storage.CharactersData, err = data.LoadCharacters(filename)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
