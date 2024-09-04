@@ -17,31 +17,36 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 
 	character := models.NewCharacter(url)
 
+	// Scrape general character information
 	c.OnHTML(".mw-page-title-main", func(e *colly.HTMLElement) {
 		character.AddGeneralData("name", cleanText(e.DOM))
 	})
 
 	generalFields := []string{"species", "gender", "class", "rank", "age", "status", "affiliation", "relatives"}
 	for _, field := range generalFields {
-		data := getCharInfo(field, "Unknown", c)
-		character.AddGeneralData(field, data)
+		// Capture the field within the loop
+		field := field
+		c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", field), func(e *colly.HTMLElement) {
+			data := cleanText(e.DOM)
+			if data == "" {
+				data = "Unknown"
+			}
+			character.AddGeneralData(field, data)
+		})
 	}
 
 	seriesInformation := []string{"manga", "anime", "jpva", "enva"}
 	for _, field := range seriesInformation {
-		data := getCharInfo(field, "Unknown", c)
-		character.AddSeriesData(field, data)
+		// Capture the field within the loop
+		field := field
+		c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", field), func(e *colly.HTMLElement) {
+			data := cleanText(e.DOM)
+			if data == "" {
+				data = "Unknown"
+			}
+			character.AddSeriesData(field, data)
+		})
 	}
-
-	// Extract status
-	// c.OnHTML("div[data-source=status] .pi-data-value", func(e *colly.HTMLElement) {
-	// 	status := extractStatus(e.DOM)
-	// 	if status != "" {
-	// 		character.AddData("status", status)
-	// 	} else {
-	// 		character.AddData("status", "Unknown")
-	// 	}
-	// })
 
 	// Extract abilities and store them in the data struct
 	c.OnHTML("h2 span#Abilities", func(e *colly.HTMLElement) {
@@ -53,13 +58,15 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 }
 
 func getCharInfo(info string, defaultValue string, c *colly.Collector) string {
-	data := defaultValue
+	var data string
 
 	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
 		text := cleanText(e.DOM)
-		if text != "" {
-			data = text
+		if text == "" {
+			data = defaultValue
 		}
+
+		data = text
 	})
 
 	return data

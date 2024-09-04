@@ -50,8 +50,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-sigChan
 
-	logger.Infof("Received signal %v, shutting down server after serving for 5 seconds", sig)
-	time.Sleep(5 * time.Second)
+	logger.Infof("Received signal %v, shutting down server", sig)
 
 	// Graceful shutdown with a timeout context
 	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
