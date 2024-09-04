@@ -1,7 +1,12 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/mux"
 	muxlogrus "github.com/pytimer/mux-logrus"
@@ -17,25 +22,44 @@ func main() {
 	logger := config.SetupLogger(cfg.LogLevel)
 	scraper := scraper.NewScraper(false, logger)
 
+	// Scrape data
 	data, err := scraper.Scrape("characters.json")
+	if err != nil {
+		logger.Errorf("Error scraping: %v", err)
+		return
+	}
+	logger.Infof("Scraped %d characters", data.AmountOfCharacters)
 
 	r := mux.NewRouter()
 	r.Use(muxlogrus.NewLogger().Middleware)
 
 	store := storage.NewMemoryStorage()
 
+	// Create the server
 	server := api.NewServer(listenAddr, store, logger)
-	server.Start(r, logger)
 
-	if err != nil {
-		logger.Errorf("Error scraping: %v", err)
+	// Start the server in a goroutine
+	go func() {
+		if err := server.Start(r, logger); err != nil && err != http.ErrServerClosed {
+			logger.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	// Listen for OS signals for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-sigChan
+
+	logger.Infof("Received signal %v, shutting down server after serving for 5 seconds", sig)
+	time.Sleep(5 * time.Second)
+
+	// Graceful shutdown with a timeout context
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownRelease()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.Fatalf("HTTP shutdown error: %v", err)
+	} else {
+		logger.Info("Server gracefully stopped")
 	}
-
-	logger.Infof("Scraped %d characters", data.AmountOfCharacters)
-
-	logger.Infof("Server starting on port %s", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
-		logger.Fatalf("Failed to start server: %v", err)
-	}
-
 }

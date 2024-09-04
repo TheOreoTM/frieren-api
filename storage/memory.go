@@ -23,7 +23,7 @@ func (s *MemoryStorage) GetCharacters() models.Characters {
 
 func (s *MemoryStorage) GetCharacter(name string) (models.Character, error) {
 	for _, character := range CharactersData.Characters {
-		if strings.EqualFold(character.Data["character"], name) {
+		if strings.EqualFold(character.Data.General["name"], name) {
 			return character, nil
 		}
 	}

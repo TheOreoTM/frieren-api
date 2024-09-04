@@ -7,7 +7,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-
 	"github.com/theoreotm/frieren-api/storage"
 )
 
@@ -15,19 +14,32 @@ type Server struct {
 	listenAddr string
 	store      storage.Storage
 	logger     *logrus.Logger
+	*http.Server
 }
 
 func NewServer(listenAddr string, store storage.Storage, logger *logrus.Logger) *Server {
+	httpServer := &http.Server{
+		Addr: listenAddr,
+	}
+
 	return &Server{
 		listenAddr: listenAddr,
 		store:      store,
 		logger:     logger,
+		Server:     httpServer,
 	}
 }
 
-func (s *Server) Start(r *mux.Router, logger *logrus.Logger) {
+func (s *Server) Start(r *mux.Router, logger *logrus.Logger) error {
 	r.HandleFunc("/characters", makeHTTPHandleFunc(s.handleGetCharacters)).Methods("GET")
 	r.HandleFunc("/characters/{name}", makeHTTPHandleFunc(s.handleGetCharacter)).Methods("GET")
+
+	// Assign the router to the server's handler
+	s.Handler = r
+
+	// Start the server
+	logger.Infof("Server starting on %s", s.listenAddr)
+	return s.ListenAndServe()
 }
 
 // GetCharacter handles the GET /character/{name} endpoint.

@@ -1,7 +1,6 @@
 package scraper
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"os"
 	"sync"
@@ -124,43 +123,6 @@ func (s *Scraper) WriteDataToJSON(filename string) error {
 	storage.CharactersData, err = data.LoadCharacters(filename)
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-// WriteDataToCSV writes the scraped data to a CSV file
-func (s *Scraper) WriteDataToCSV(filename string) error {
-	// Create or open the CSV file
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// Write the header
-	err = writer.Write([]string{"URL", "Character", "Class", "Gender", "Rank", "Species"})
-	if err != nil {
-		return err
-	}
-
-	// Write data for each character
-	for data := range s.DataChannel {
-		row := []string{
-			data.URL,
-			data.Data["character"],
-			data.Data["class"],
-			data.Data["gender"],
-			data.Data["rank"],
-			data.Data["species"],
-		}
-		err := writer.Write(row)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

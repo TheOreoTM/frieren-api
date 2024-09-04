@@ -18,23 +18,30 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 	character := models.NewCharacter(url)
 
 	c.OnHTML(".mw-page-title-main", func(e *colly.HTMLElement) {
-		character.AddData("character", cleanText(e.DOM))
+		character.AddGeneralData("name", cleanText(e.DOM))
 	})
 
-	infoFields := []string{"species", "gender", "class", "rank", "age"}
-	for _, field := range infoFields {
-		getCharInfo(field, character, c)
+	generalFields := []string{"species", "gender", "class", "rank", "age", "status", "affiliation", "relatives"}
+	for _, field := range generalFields {
+		data := getCharInfo(field, "Unknown", c)
+		character.AddGeneralData(field, data)
+	}
+
+	seriesInformation := []string{"manga", "anime", "jpva", "enva"}
+	for _, field := range seriesInformation {
+		data := getCharInfo(field, "Unknown", c)
+		character.AddSeriesData(field, data)
 	}
 
 	// Extract status
-	c.OnHTML("div[data-source=status] .pi-data-value", func(e *colly.HTMLElement) {
-		status := extractStatus(e.DOM)
-		if status != "" {
-			character.AddData("status", status)
-		} else {
-			character.AddData("status", "Unknown")
-		}
-	})
+	// c.OnHTML("div[data-source=status] .pi-data-value", func(e *colly.HTMLElement) {
+	// 	status := extractStatus(e.DOM)
+	// 	if status != "" {
+	// 		character.AddData("status", status)
+	// 	} else {
+	// 		character.AddData("status", "Unknown")
+	// 	}
+	// })
 
 	// Extract abilities and store them in the data struct
 	c.OnHTML("h2 span#Abilities", func(e *colly.HTMLElement) {
@@ -45,21 +52,21 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 	channel <- character
 }
 
-func getCharInfo(info string, character *models.Character, c *colly.Collector) {
+func getCharInfo(info string, defaultValue string, c *colly.Collector) string {
+	data := defaultValue
 
 	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
 		text := cleanText(e.DOM)
-		if text == "" {
-			character.AddData(info, "Unknown")
+		if text != "" {
+			data = text
 		}
-
-		character.AddData(info, text)
 	})
+
+	return data
 }
 
 func extractAbilities(e *goquery.Selection) map[string]string {
 	abilities := make(map[string]string)
-	abilities["default"] = ""
 
 	// Find the "Abilities" section
 	// Traverse the siblings of the "Abilities" heading
@@ -82,11 +89,17 @@ func extractAbilities(e *goquery.Selection) map[string]string {
 
 		flattenedList := flattenList(next)
 		for _, ability := range flattenedList {
+
+			if !strings.Contains(ability, ":") {
+				abilities[ability] = "" // Stark edgecase: ability name has no description
+				continue
+			}
+
 			sections := strings.Split(ability, ": ")
 			name := strings.TrimSpace(strings.Join(sections[:len(sections)-1], ": "))
 			description := strings.TrimSpace(strings.Replace(ability, name+":", "", 1))
 
-			if name != "" && description != "" {
+			if name != "" || description != "" { // since starks ability list is just a list of ability names
 				abilities[name] = description
 			}
 		}
@@ -124,10 +137,4 @@ func flattenList(ul *goquery.Selection) []string {
 	})
 
 	return result
-}
-
-// extractStatus extracts the status information from the collapsible content.
-func extractStatus(s *goquery.Selection) string {
-	return cleanText(s)
-
 }
