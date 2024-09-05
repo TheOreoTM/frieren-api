@@ -24,7 +24,6 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 
 	generalFields := []string{"species", "gender", "class", "rank", "age", "status", "affiliation", "relatives"}
 	for _, field := range generalFields {
-		// Capture the field within the loop
 		field := field
 		c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", field), func(e *colly.HTMLElement) {
 			data := cleanText(e.DOM)
@@ -37,7 +36,6 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 
 	seriesInformation := []string{"manga", "anime", "jpva", "enva"}
 	for _, field := range seriesInformation {
-		// Capture the field within the loop
 		field := field
 		c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", field), func(e *colly.HTMLElement) {
 			data := cleanText(e.DOM)
@@ -48,6 +46,17 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 		})
 	}
 
+	physicalInformation := []string{"hair", "eyes"}
+	for _, field := range physicalInformation {
+		field := field
+		c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", field), func(e *colly.HTMLElement) {
+			data := cleanText(e.DOM)
+			if data != "" {
+				character.AddPhysicalData(field, data)
+			}
+		})
+	}
+
 	// Extract abilities and store them in the data struct
 	c.OnHTML("h2 span#Abilities", func(e *colly.HTMLElement) {
 		character.AddAbilities(extractAbilities(e.DOM))
@@ -55,21 +64,6 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 
 	c.Visit(character.URL)
 	channel <- character
-}
-
-func getCharInfo(info string, defaultValue string, c *colly.Collector) string {
-	var data string
-
-	c.OnHTML(fmt.Sprintf("div[data-source='%s'] .pi-data-value", info), func(e *colly.HTMLElement) {
-		text := cleanText(e.DOM)
-		if text == "" {
-			data = defaultValue
-		}
-
-		data = text
-	})
-
-	return data
 }
 
 func extractAbilities(e *goquery.Selection) map[string]string {

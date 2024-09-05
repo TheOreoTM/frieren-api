@@ -37,6 +37,10 @@ func (c *Character) AddGeneralData(key string, value string) {
 	c.Data.General[key] = value
 }
 
+func (c *Character) AddPhysicalData(key string, value string) {
+	c.Data.Physical[key] = value
+}
+
 func (c *Character) AddSeriesData(key string, value string) {
 	c.Data.Series[key] = value
 }
