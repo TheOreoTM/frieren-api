@@ -17,6 +17,6 @@ WORKDIR /root/
 
 COPY --from=builder /app/frieren-api .
 
-EXPOSE 8080
+EXPOSE 8000
 
 CMD ["./frieren-api"]

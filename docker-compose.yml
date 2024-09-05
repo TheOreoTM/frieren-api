@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: frieren-api-container
     ports:
-      - "8080:8080"
+      - "8000:8000"
     restart: always
     environment:
       - ENV=production
