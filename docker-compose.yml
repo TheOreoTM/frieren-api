@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  frieren-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frieren-api-container
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      - ENV=production
+    volumes:
+      - ./data:/app/data
