@@ -21,6 +21,7 @@ func main() {
 	listenAddr := ":" + cfg.Port
 	logger := config.SetupLogger(cfg.LogLevel)
 	scraper := scraper.NewScraper(false, logger)
+	scraper.SetDebug(true)
 
 	// Scrape data
 	data, err := scraper.Scrape("characters.json")
