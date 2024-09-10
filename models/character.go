@@ -1,14 +1,22 @@
 package models
 
 type CharacterData struct {
+	Names    Names             `json:"names"`
 	General  map[string]string `json:"general"`
 	Physical map[string]string `json:"physical"`
 	Series   map[string]string `json:"series"`
 }
 
+type Names struct {
+	English  string `json:"english"`
+	Japanese string `json:"japanese"`
+	Romaji   string `json:"romaji"`
+}
+
 type Character struct {
 	URL       string        `json:"url"`
 	Data      CharacterData `json:"data"`
+	Name      string        `json:"name"`
 	Abilities Abilities     `json:"abilities"`
 }
 
@@ -19,6 +27,11 @@ type Characters struct {
 
 func NewCharacterData() CharacterData {
 	return CharacterData{
+		Names: Names{
+			English:  "",
+			Japanese: "",
+			Romaji:   "",
+		},
 		General:  make(map[string]string),
 		Physical: make(map[string]string),
 		Series:   make(map[string]string),
@@ -27,10 +40,16 @@ func NewCharacterData() CharacterData {
 
 func NewCharacter(url string) *Character {
 	return &Character{
+		Name:      "",
 		URL:       url,
 		Data:      NewCharacterData(),
 		Abilities: make(map[string]string),
 	}
+}
+
+func (c *Character) SetName(name string) {
+	c.Name = name
+	c.Data.Names.English = name
 }
 
 func (c *Character) AddGeneralData(key string, value string) {

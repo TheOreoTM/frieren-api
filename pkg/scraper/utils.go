@@ -27,7 +27,7 @@ func cleanText(selection *goquery.Selection) string {
 				hyperlink := ""
 
 				if strings.HasPrefix(href, "/") {
-					hyperlink = fmt.Sprintf("[%s](https://frieren.fandom.com%s)", strings.TrimSpace(s.Text()), href)
+					hyperlink = fmt.Sprintf("[%s](%s)", strings.TrimSpace(s.Text()), BaseFandomURL+href)
 				} else {
 					hyperlink = fmt.Sprintf("[%s](%s)", strings.TrimSpace(s.Text()), href)
 				}

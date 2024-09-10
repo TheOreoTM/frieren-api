@@ -19,7 +19,7 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 
 	// Scrape general character information
 	c.OnHTML(".mw-page-title-main", func(e *colly.HTMLElement) {
-		character.AddGeneralData("name", cleanText(e.DOM))
+		character.SetName(cleanText(e.DOM))
 	})
 
 	generalFields := []string{"species", "gender", "class", "rank", "age", "status", "affiliation", "relatives"}
@@ -45,6 +45,17 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 			character.AddSeriesData(field, data)
 		})
 	}
+
+	c.OnHTML("section.pi-item.pi-group.pi-border-color table.pi-horizontal-group tbody tr", func(e *colly.HTMLElement) {
+		jpName := e.ChildText(`td[data-source="jp_name"]`)
+		romajiName := e.ChildText(`td[data-source="romaji"]`)
+		if jpName != "" {
+			character.Data.Names.Japanese = jpName
+		}
+		if romajiName != "" {
+			character.Data.Names.Romaji = romajiName
+		}
+	})
 
 	physicalInformation := []string{"hair", "eyes"}
 	for _, field := range physicalInformation {

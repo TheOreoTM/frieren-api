@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 	"github.com/sirupsen/logrus"
 	"github.com/theoreotm/frieren-api/models"
@@ -15,29 +17,18 @@ import (
 )
 
 type Scraper struct {
-	CharacterURLs []string
-	LocationURLs  *LocationURLs
-	URLSet        map[string]struct{}
-	DataChannel   chan *models.Character
-	ShouldDebug   bool
-	Logger        *logrus.Logger
+	CharacterURLs        []string
+	LocationURLs         []string
+	URLSet               map[string]struct{}
+	CharacterDataChannel chan *models.Character
+	LocationDataChannel  chan *models.Location
+	ShouldDebug          bool
+	Logger               *logrus.Logger
 }
 
 type ScrapedData struct {
 	CharacterURLs      []string
 	AmountOfCharacters int
-}
-
-type LocationURLs struct {
-	Central  []string
-	Nothern  *NothernLocationURLs
-	Southern []string
-}
-
-type NothernLocationURLs struct {
-	NothernPlateau    []string
-	ImperialTerritory []string
-	Ende              []string
 }
 
 const (
@@ -47,47 +38,40 @@ const (
 // NewScraper initializes a new Scraper
 func NewScraper(shouldDebug bool, logger *logrus.Logger) *Scraper {
 	return &Scraper{
-		CharacterURLs: []string{},
-		LocationURLs:  newLocationURLs(),
-		URLSet:        make(map[string]struct{}),
-		DataChannel:   make(chan *models.Character),
-		ShouldDebug:   shouldDebug,
-		Logger:        logger,
+		CharacterURLs:        []string{},
+		LocationURLs:         []string{},
+		URLSet:               make(map[string]struct{}),
+		CharacterDataChannel: make(chan *models.Character),
+		LocationDataChannel:  make(chan *models.Location),
+		ShouldDebug:          shouldDebug,
+		Logger:               logger,
 	}
 }
 
 func (s *Scraper) Scrape(filename string) (ScrapedData, error) {
-	var wg sync.WaitGroup
 
 	// Visit the list of characters page and gather URLs
 	s.GetLocationURLs()
-	scrapedUrls := s.GetCharacterURLs()
+	s.GetCharacterURLs()
 
 	// Start scraping each character
+	s.ScrapeCharacters()
+	s.ScrapeLocations()
 
-	s.ScrapeCharacters(&wg)
-	s.ScrapeLocations(&wg)
-
-	// Wait for all scraping goroutines to finish
-	go func() {
-		wg.Wait()
-		close(s.DataChannel)
-	}()
-
-	err := s.WriteDataToJSON(filename)
+	err := s.WriteDataToJSON(s.CharacterDataChannel, s.LocationDataChannel)
 	if err != nil {
 		return ScrapedData{}, err
 	}
 
 	return ScrapedData{
-		CharacterURLs:      scrapedUrls,
-		AmountOfCharacters: len(scrapedUrls),
+		CharacterURLs:      s.CharacterURLs,
+		AmountOfCharacters: len(s.CharacterURLs),
 	}, nil
 
 }
 
 // GetCharacterURLs gathers all unique character URLs from the list page
-func (s *Scraper) GetCharacterURLs() []string {
+func (s *Scraper) GetCharacterURLs() {
 	var scrapedUrls []string
 	s.Logger.Infoln("Started character scraper...")
 
@@ -105,51 +89,74 @@ func (s *Scraper) GetCharacterURLs() []string {
 		}
 	})
 
-	c.Visit("https://frieren.fandom.com/wiki/List_of_Characters")
+	c.Visit(fmt.Sprintf("%s/wiki/List_of_Characters", BaseFandomURL))
 
-	return scrapedUrls
 }
 
 func (s *Scraper) GetLocationURLs() {
-	locationUrls := &LocationURLs{}
+	locationUrls := []string{}
 	s.Logger.Infoln("Started location scraper...")
 
 	c := colly.NewCollector(colly.AllowedDomains("frieren.fandom.com"))
 
+	// List of valid major locations to track
 	validMajorLocations := []string{"Central Lands", "Northern Lands", "Southern Lands"}
 
-	c.OnHTML("h2 span#Central_Lands", func(e *colly.HTMLElement) {
-		section := cleanText(e.DOM)
-		if !slices.Contains(validMajorLocations, section) {
-			return
-		}
+	c.OnHTML("h2", func(e *colly.HTMLElement) {
+		// Get the major location name
+		locationName := e.DOM.Find("span.mw-headline").Text()
 
-		locations := extractLocations(e.DOM)
-		fmt.Printf("Found %d locations in %s\n", len(locations), section)
+		if slices.Contains(validMajorLocations, locationName) {
+			fmt.Println(locationName)
+			e.DOM.NextAllFiltered("ul").Find("li a").Each(func(i int, s *goquery.Selection) {
+				href, exists := s.Attr("href")
+				if exists && !(strings.Contains(href, ":") || strings.Contains(href, "cite")) {
+					locationUrls = append(locationUrls, BaseFandomURL+href)
+				}
+			})
+		}
 
 	})
 
-	c.Visit("https://frieren.fandom.com/wiki/Locations")
+	// Start scraping
+	c.Visit(fmt.Sprintf("%s/wiki/Locations", BaseFandomURL))
 
-	fmt.Println(locationUrls)
+	locationUrls = removeDuplicates(locationUrls)
+	fmt.Printf("Found %d locations\n", len(locationUrls))
 
+	// Now locationUrls should have all the collected URLs
+	s.LocationURLs = locationUrls
 }
 
 // ScrapeCharacters starts the scraping process for each character URL
-func (s *Scraper) ScrapeCharacters(wg *sync.WaitGroup) {
+func (s *Scraper) ScrapeCharacters() {
+	wg := &sync.WaitGroup{}
+
 	for _, url := range s.CharacterURLs {
 		wg.Add(1)
 		printDebug("Scraping character: "+url, s)
-		go scrapeCharacter(url, wg, s.DataChannel)
+		go scrapeCharacter(url, wg, s.CharacterDataChannel)
 	}
+
+	go func() {
+		wg.Wait()
+		close(s.CharacterDataChannel)
+	}()
 }
 
-func (s *Scraper) ScrapeLocations(wg *sync.WaitGroup) {
-	for _, url := range s.LocationURLs.Central {
+func (s *Scraper) ScrapeLocations() {
+	wg := &sync.WaitGroup{}
+
+	for _, url := range s.LocationURLs {
 		wg.Add(1)
-		printDebug("Scraping location: "+url, s)
-		go scrapeLocation(url, wg, s.DataChannel)
+		// printDebug("Scraping location: "+url, s)
+		go scrapeLocation(url, wg, s.LocationDataChannel)
 	}
+
+	go func() {
+		wg.Wait()
+		close(s.LocationDataChannel)
+	}()
 
 }
 
@@ -157,8 +164,8 @@ func (s *Scraper) SetDebug(shouldDebug bool) {
 	s.ShouldDebug = shouldDebug
 }
 
-func (s *Scraper) WriteDataToJSON(filename string) error {
-	file, err := os.Create(filename)
+func (s *Scraper) WriteDataToJSON(characterChannel chan *models.Character, locationChannel chan *models.Location) error {
+	file, err := os.Create("characters.json")
 	if err != nil {
 		return err
 	}
@@ -167,12 +174,16 @@ func (s *Scraper) WriteDataToJSON(filename string) error {
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 
-	// Create a slice to hold all the characters
 	var characters []*models.Character
+	var locations []string
 
 	// Read from DataChannel until it's closed
-	for data := range s.DataChannel {
+	for data := range characterChannel {
 		characters = append(characters, data)
+	}
+
+	for data := range locationChannel {
+		locations = append(locations, data.URL)
 	}
 
 	// Encode all characters to JSON
@@ -181,7 +192,9 @@ func (s *Scraper) WriteDataToJSON(filename string) error {
 		return err
 	}
 
-	storage.CharactersData, err = data.LoadCharacters(filename)
+	fmt.Println(locations)
+
+	storage.CharactersData, err = data.LoadCharacters("characters.json")
 	if err != nil {
 		return err
 	}
@@ -189,14 +202,26 @@ func (s *Scraper) WriteDataToJSON(filename string) error {
 	return nil
 }
 
-func newLocationURLs() *LocationURLs {
-	return &LocationURLs{
-		Central: []string{},
-		Nothern: &NothernLocationURLs{
-			NothernPlateau:    []string{},
-			ImperialTerritory: []string{},
-			Ende:              []string{},
-		},
-		Southern: []string{},
+// func newLocationURLs() *Locations {
+// 	return &Locations{
+// 		Central: []string{},
+// 		Nothern: &NothernLocations{
+// 			NothernPlateau:    []string{},
+// 			ImperialTerritory: []string{},
+// 			Ende:              []string{},
+// 		},
+// 		Southern: []string{},
+// 	}
+// }
+
+func removeDuplicates(slice []string) []string {
+	keys := make(map[string]bool)
+	list := []string{}
+	for _, entry := range slice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
 	}
+	return list
 }
