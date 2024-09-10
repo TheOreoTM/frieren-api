@@ -15,8 +15,8 @@ type Names struct {
 
 type Character struct {
 	URL       string        `json:"url"`
-	Data      CharacterData `json:"data"`
 	Name      string        `json:"name"`
+	Data      CharacterData `json:"data"`
 	Abilities Abilities     `json:"abilities"`
 }
 
