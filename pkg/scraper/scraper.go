@@ -17,13 +17,14 @@ import (
 )
 
 type Scraper struct {
-	CharacterURLs        []string
-	LocationURLs         []string
-	URLSet               map[string]struct{}
-	CharacterDataChannel chan *models.Character
-	LocationDataChannel  chan *models.Location
-	ShouldDebug          bool
-	Logger               *logrus.Logger
+	CharacterURLs         []string
+	LocationURLs          []string
+	URLSet                map[string]struct{}
+	CharacterDataChannel  chan *models.Character
+	LocationDataChannel   chan *models.Location
+	ShouldDebug           bool
+	ShouldScrapeLocations bool
+	Logger                *logrus.Logger
 }
 
 type ScrapedData struct {
@@ -38,25 +39,30 @@ const (
 // NewScraper initializes a new Scraper
 func NewScraper(shouldDebug bool, logger *logrus.Logger) *Scraper {
 	return &Scraper{
-		CharacterURLs:        []string{},
-		LocationURLs:         []string{},
-		URLSet:               make(map[string]struct{}),
-		CharacterDataChannel: make(chan *models.Character),
-		LocationDataChannel:  make(chan *models.Location),
-		ShouldDebug:          shouldDebug,
-		Logger:               logger,
+		CharacterURLs:         []string{},
+		LocationURLs:          []string{},
+		URLSet:                make(map[string]struct{}),
+		CharacterDataChannel:  make(chan *models.Character),
+		LocationDataChannel:   make(chan *models.Location),
+		ShouldDebug:           shouldDebug,
+		ShouldScrapeLocations: false,
+		Logger:                logger,
 	}
 }
 
 func (s *Scraper) Scrape(filename string) (ScrapedData, error) {
 
 	// Visit the list of characters page and gather URLs
-	s.GetLocationURLs()
+	if s.ShouldScrapeLocations {
+		s.GetLocationURLs()
+	}
 	s.GetCharacterURLs()
 
 	// Start scraping each character
 	s.ScrapeCharacters()
-	s.ScrapeLocations()
+	if s.ShouldScrapeLocations {
+		s.ScrapeLocations()
+	}
 
 	err := s.WriteDataToJSON(s.CharacterDataChannel, s.LocationDataChannel)
 	if err != nil {
@@ -182,8 +188,13 @@ func (s *Scraper) WriteDataToJSON(characterChannel chan *models.Character, locat
 		characters = append(characters, data)
 	}
 
-	for data := range locationChannel {
-		locations = append(locations, data.URL)
+	if s.ShouldScrapeLocations {
+		for data := range locationChannel {
+			locations = append(locations, data.URL)
+		}
+
+		fmt.Println(locations)
+
 	}
 
 	// Encode all characters to JSON
@@ -191,8 +202,6 @@ func (s *Scraper) WriteDataToJSON(characterChannel chan *models.Character, locat
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(locations)
 
 	storage.CharactersData, err = data.LoadCharacters("characters.json")
 	if err != nil {

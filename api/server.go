@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"encoding/json"
 
@@ -33,6 +34,7 @@ func NewServer(listenAddr string, store storage.Storage, logger *logrus.Logger) 
 func (s *Server) Start(r *mux.Router, logger *logrus.Logger) error {
 	r.HandleFunc("/characters", makeHTTPHandleFunc(s.handleGetCharacters)).Methods("GET")
 	r.HandleFunc("/characters/{name}", makeHTTPHandleFunc(s.handleGetCharacter)).Methods("GET")
+	r.HandleFunc("/names", makeHTTPHandleFunc(s.handleGetNames)).Methods("GET")
 
 	// Assign the router to the server's handler
 	s.Handler = r
@@ -59,6 +61,22 @@ func (s *Server) handleGetCharacter(w http.ResponseWriter, r *http.Request) erro
 // GetCharacters handles the GET /characters endpoint.
 func (s *Server) handleGetCharacters(w http.ResponseWriter, r *http.Request) error {
 	return WriteJSON(w, http.StatusOK, s.store.GetCharacters())
+}
+
+func (s *Server) handleGetNames(w http.ResponseWriter, r *http.Request) error {
+	// Get the names of all characters
+	characterData := s.store.GetCharacters()
+	names := make([]string, len(characterData.Characters))
+
+	for i, character := range characterData.Characters {
+		var charNames []string
+		charNames = append(charNames, character.Data.Names.English)
+		charNames = append(charNames, character.Data.Names.Japanese)
+		charNames = append(charNames, character.Data.Names.Romaji)
+		names[i] = strings.Join(charNames, ", ")
+	}
+
+	return WriteJSON(w, http.StatusOK, names)
 }
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
