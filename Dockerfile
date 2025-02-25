@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /app/frieren-api ./cmd/api
+RUN make build
 
 # Stage 2: Run the built application
 FROM alpine:latest
