@@ -9,8 +9,7 @@ import (
 
 type MemoryStorage struct{}
 
-// Global variable to hold character data
-var CharactersData *models.Characters = &models.Characters{}
+
 
 func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{}

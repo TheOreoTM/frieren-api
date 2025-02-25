@@ -43,7 +43,7 @@ func NewCharacter(url string) *Character {
 		Name:      "",
 		URL:       url,
 		Data:      NewCharacterData(),
-		Abilities: make(map[string]string),
+		Abilities: Abilities{},
 	}
 }
 
@@ -64,12 +64,6 @@ func (c *Character) AddSeriesData(key string, value string) {
 	c.Data.Series[key] = value
 }
 
-func (c *Character) AddAbility(key string, value string) {
-	c.Abilities[key] = value
-}
-
 func (c *Character) AddAbilities(abilities Abilities) {
-	for key, value := range abilities {
-		c.Abilities[key] = value
-	}
+	copy(c.Abilities, abilities)
 }

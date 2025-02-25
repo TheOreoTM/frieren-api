@@ -70,11 +70,62 @@ func scrapeCharacter(url string, wg *sync.WaitGroup, channel chan *models.Charac
 
 	// Extract abilities and store them in the data struct
 	c.OnHTML("h2 span#Abilities", func(e *colly.HTMLElement) {
-		character.AddAbilities(extractAbilities(e.DOM))
+		character.AddAbilities(parseAbilities(e.DOM))
 	})
 
 	c.Visit(character.URL)
 	channel <- character
+}
+
+func parseAbilities(e *goquery.Selection) models.Abilities {
+	var abilities models.Abilities
+
+	// Find the "Abilities" section
+	for next := e.Parent().Next(); next.Length() > 0; next = next.Next() {
+		if next.Is("h2") { // Stop if a new heading is encountered
+			break
+		}
+
+		// Skip non-list elements
+		if !next.Is("ul") {
+			continue
+		}
+
+		// Process abilities list
+		abilities = parseAbilityList(next)
+		break // Only process the first <ul> found under the section
+	}
+
+	return abilities
+}
+
+// Recursive function to handle nested lists
+func parseAbilityList(ul *goquery.Selection) models.Abilities {
+	var abilities models.Abilities
+
+	ul.ChildrenFiltered("li").Each(func(i int, li *goquery.Selection) {
+		// Extract title from bold text
+		title := cleanText(li.Find("b").First())
+
+		// Remove title from the list item to get a clean description
+		li.Find("b").First().Remove()
+		description := cleanText(li)
+
+		// Check for nested lists inside this list item
+		subitems := li.ChildrenFiltered("ul")
+		var subAbilities models.Abilities
+		if subitems.Length() > 0 {
+			subAbilities = parseAbilityList(subitems.First())
+		}
+
+		abilities = append(abilities, models.Ability{
+			Title:       title,
+			Description: description,
+			SubItems:    subAbilities,
+		})
+	})
+
+	return abilities
 }
 
 func extractAbilities(e *goquery.Selection) map[string]string {
