@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -99,7 +100,6 @@ func parseAbilities(e *goquery.Selection) models.Abilities {
 	return abilities
 }
 
-// Recursive function to handle nested lists
 func parseAbilityList(ul *goquery.Selection) models.Abilities {
 	var abilities models.Abilities
 
@@ -107,9 +107,25 @@ func parseAbilityList(ul *goquery.Selection) models.Abilities {
 		// Extract title from bold text
 		title := cleanText(li.Find("b").First())
 
-		// Remove title from the list item to get a clean description
+		// Extract text inside ｢｣ if present
+		re := regexp.MustCompile(`｢(.*?)｣`)
+		japaneseTitleMatch := re.FindStringSubmatch(cleanText(li))
+
+		if len(japaneseTitleMatch) > 1 {
+			title += " " + japaneseTitleMatch[0] // Append full ｢Japanese Name｣
+		}
+
+		// Remove extracted title and Japanese text from the list item to get a clean description
 		li.Find("b").First().Remove()
 		description := cleanText(li)
+
+		// Remove the extracted Japanese part from description if present
+		if len(japaneseTitleMatch) > 1 {
+			description = strings.Replace(description, japaneseTitleMatch[0], "", 1)
+		}
+
+		// Remove colon from description if it starts with one
+		description, _ = strings.CutPrefix(description, ": ")
 
 		// Check for nested lists inside this list item
 		subitems := li.ChildrenFiltered("ul")
@@ -119,9 +135,9 @@ func parseAbilityList(ul *goquery.Selection) models.Abilities {
 		}
 
 		abilities = append(abilities, models.Ability{
-			Title:       title,
-			Description: description,
-			SubItems:    subAbilities,
+			Title:        title,
+			Description:  strings.TrimSpace(description),
+			SubAbilities: subAbilities,
 		})
 	})
 

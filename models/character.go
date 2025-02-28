@@ -65,5 +65,5 @@ func (c *Character) AddSeriesData(key string, value string) {
 }
 
 func (c *Character) AddAbilities(abilities Abilities) {
-	copy(c.Abilities, abilities)
+	c.Abilities = abilities
 }
